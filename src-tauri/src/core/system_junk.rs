@@ -185,7 +185,7 @@ async fn scan_category(cat: &JunkCategory) -> Result<JunkCategoryResult, AppErro
 
 #[cfg(windows)]
 fn scan_recycle_bin() -> Result<JunkCategoryResult, AppError> {
-    use std::process::Command;
+    use crate::core::process_util;
     // 通过 PowerShell 读取回收站大小
     let script = r#"
         $shell = New-Object -ComObject Shell.Application
@@ -200,9 +200,7 @@ fn scan_recycle_bin() -> Result<JunkCategoryResult, AppError> {
         }
         Write-Output "$count|$size"
     "#;
-    let output = Command::new("powershell")
-        .args(["-NoProfile", "-Command", script])
-        .output()
+    let output = process_util::run_capture("powershell", &["-NoProfile", "-Command", script])
         .map_err(|e| AppError::WindowsApi(format!("spawn powershell: {}", e)))?;
     let s = String::from_utf8_lossy(&output.stdout);
     let trimmed = s.trim();

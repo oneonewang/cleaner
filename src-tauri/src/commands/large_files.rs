@@ -3,7 +3,7 @@
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::commands::shared::{drop_cancel, new_cancel};
+use crate::commands::shared::new_cancel;
 use crate::core::large_files;
 use crate::core::large_files::ScanParams;
 use crate::error::AppError;
@@ -23,29 +23,46 @@ pub fn scan_large_files(
     let scan_id_clone = scan_id.clone();
     let cancel_clone: Arc<std::sync::atomic::AtomicBool> = cancel.clone();
 
-    std::thread::spawn(move || {
-        let params = ScanParams {
-            scan_id: scan_id_clone.clone(),
-            roots,
-            min_size,
-            older_than_days,
-            cancel: cancel_clone,
-        };
-        let res = large_files::scan(&app_clone, params, |_lf: &LargeFile| {});
-        if let Err(e) = res {
-            if matches!(e, AppError::Cancelled) {
-                crate::core::progress::emit_cancelled(&app_clone, &scan_id_clone);
-            } else {
+    tauri::async_runtime::spawn(async move {
+        let scan_id_for_task = scan_id_clone.clone();
+        let app_for_task = app_clone.clone();
+        let res = tauri::async_runtime::spawn_blocking(move || {
+            let app_in_block = app_for_task.clone();
+            let params = ScanParams {
+                scan_id: scan_id_for_task.clone(),
+                roots,
+                min_size,
+                older_than_days,
+                cancel: cancel_clone,
+            };
+            large_files::scan(&app_in_block, params, |_lf: &LargeFile| {})
+        })
+        .await;
+
+        match res {
+            Ok(Ok(_)) => {}
+            Ok(Err(e)) => {
+                if matches!(e, AppError::Cancelled) {
+                    crate::core::progress::emit_cancelled(&app_clone, &scan_id_clone);
+                } else {
+                    crate::core::progress::emit_error(&app_clone, &scan_id_clone, &e.to_string());
+                }
+            }
+            Err(e) => {
                 crate::core::progress::emit_error(&app_clone, &scan_id_clone, &e.to_string());
             }
         }
-        drop_cancel(&scan_id_clone);
+        crate::commands::shared::drop_cancel(&scan_id_clone);
     });
 
     Ok(serde_json::json!({ "scan_id": scan_id }))
 }
 
 #[tauri::command]
-pub fn delete_paths(paths: Vec<String>, to_trash: bool) -> CleanSummary {
-    large_files::clean(&paths, to_trash)
+pub async fn delete_paths(paths: Vec<String>, to_trash: bool) -> Result<CleanSummary, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        large_files::clean(&paths, to_trash)
+    })
+    .await
+    .map_err(|e| AppError::Other(format!("join error: {}", e)))
 }

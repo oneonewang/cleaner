@@ -36,9 +36,10 @@ pub fn cancel_scan(scan_id: String) -> Result<(), AppError> {
 pub fn reveal_in_explorer(path: String) -> Result<(), AppError> {
     #[cfg(windows)]
     {
-        use std::process::Command;
+        use crate::core::process_util;
         // 用 explorer.exe /select,"<path>" 在资源管理器中显示
-        let _ = Command::new("explorer").arg(format!("/select,{}", path)).spawn();
+        let arg = format!("/select,{}", path);
+        let _ = process_util::spawn_detached("explorer", &[&arg]);
     }
     Ok(())
 }
@@ -47,8 +48,8 @@ pub fn reveal_in_explorer(path: String) -> Result<(), AppError> {
 pub fn open_path(path: String) -> Result<(), AppError> {
     #[cfg(windows)]
     {
-        use std::process::Command;
-        let _ = Command::new("cmd").args(["/c", "start", "", &path]).spawn();
+        use crate::core::process_util;
+        let _ = process_util::spawn_detached("cmd", &["/c", "start", "", &path]);
     }
     Ok(())
 }

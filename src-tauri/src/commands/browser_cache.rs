@@ -11,23 +11,36 @@ pub fn detect_browsers() -> Vec<BrowserProfile> {
 }
 
 #[tauri::command]
-pub fn scan_browser_cache(
+pub async fn scan_browser_cache(
     profile_ids: Vec<String>,
 ) -> Result<Vec<BrowserProfile>, AppError> {
-    let mut profiles = browser_cache::detect_browsers();
-    let wanted: std::collections::HashSet<String> = profile_ids.into_iter().collect();
-    for p in profiles.iter_mut() {
-        if wanted.contains(&p.id) {
-            browser_cache::scan_profile_size(p)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut profiles = browser_cache::detect_browsers();
+        let wanted: std::collections::HashSet<String> = profile_ids.into_iter().collect();
+        for p in profiles.iter_mut() {
+            if wanted.contains(&p.id) {
+                browser_cache::scan_profile_size(p)?;
+            }
         }
-    }
-    Ok(profiles.into_iter().filter(|p| wanted.contains(&p.id)).collect())
+        Ok::<_, AppError>(
+            profiles
+                .into_iter()
+                .filter(|p| wanted.contains(&p.id))
+                .collect(),
+        )
+    })
+    .await
+    .map_err(|e| AppError::Other(format!("join error: {}", e)))?
 }
 
 #[tauri::command]
-pub fn clean_browser_cache(
+pub async fn clean_browser_cache(
     cache_paths: Vec<String>,
     to_trash: bool,
-) -> CleanSummary {
-    browser_cache::clean(&cache_paths, to_trash)
+) -> Result<CleanSummary, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        browser_cache::clean(&cache_paths, to_trash)
+    })
+    .await
+    .map_err(|e| AppError::Other(format!("join error: {}", e)))
 }

@@ -3,6 +3,7 @@
 pub mod browser_cache;
 pub mod large_files;
 pub mod paths;
+pub mod process_util;
 pub mod progress;
 pub mod registry;
 pub mod size;

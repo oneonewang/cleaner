@@ -8,17 +8,29 @@ use crate::models::junk_item::CleanSummary;
 use crate::models::registry_issue::{RegistryIssue, RegistryScope};
 
 #[tauri::command]
-pub fn scan_registry(scopes: Vec<RegistryScope>) -> Result<Vec<RegistryIssue>, AppError> {
-    registry::scan(&scopes)
+pub async fn scan_registry(scopes: Vec<RegistryScope>) -> Result<Vec<RegistryIssue>, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        registry::scan(&scopes)
+    })
+    .await
+    .map_err(|e| AppError::Other(format!("join error: {}", e)))?
 }
 
 #[tauri::command]
-pub fn backup_registry(issues: Vec<RegistryIssue>) -> Result<String, AppError> {
-    let path: PathBuf = registry::backup(&issues)?;
+pub async fn backup_registry(issues: Vec<RegistryIssue>) -> Result<String, AppError> {
+    let path: PathBuf = tauri::async_runtime::spawn_blocking(move || {
+        registry::backup(&issues)
+    })
+    .await
+    .map_err(|e| AppError::Other(format!("join error: {}", e)))??;
     Ok(path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub fn clean_registry(issues: Vec<RegistryIssue>) -> CleanSummary {
-    registry::clean(&issues)
+pub async fn clean_registry(issues: Vec<RegistryIssue>) -> Result<CleanSummary, AppError> {
+    tauri::async_runtime::spawn_blocking(move || {
+        registry::clean(&issues)
+    })
+    .await
+    .map_err(|e| AppError::Other(format!("join error: {}", e)))
 }

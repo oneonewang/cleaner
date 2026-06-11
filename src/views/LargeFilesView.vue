@@ -126,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { open } from '@tauri-apps/plugin-dialog'
@@ -139,6 +139,7 @@ import { cancelScan, revealInExplorer } from '@/api'
 import { useCleaningStore } from '@/stores/cleaning'
 import { useSettingsStore } from '@/stores/settings'
 import { formatSize } from '@/utils/format'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 
 const { t } = useI18n()
 const cleaningStore = useCleaningStore()
@@ -161,6 +162,18 @@ const selectedBytes = computed(() => {
     .reduce((acc, f) => acc + f.size, 0)
 })
 
+let unFile: UnlistenFn | null = null
+
+async function setupListener() {
+  if (unFile) return
+  unFile = await listen<LargeFile>('large-file-found', (e) => {
+    if (cleaningStore.scanKind !== 'large-files') return
+    if (files.value.length < 5000) {
+      files.value.push(e.payload)
+    }
+  })
+}
+
 async function pickFolder() {
   try {
     const selected = await open({ directory: true, multiple: true })
@@ -181,6 +194,7 @@ async function onScan() {
   finished.value = false
   cleaningStore.reset()
   await cleaningStore.attach()
+  await setupListener()
   try {
     const { scan_id } = await scanLargeFiles(
       roots.value,
@@ -188,7 +202,6 @@ async function onScan() {
       olderThanDays.value,
     )
     cleaningStore.beginScan('large-files', scan_id)
-    scanning.value = true
   } catch (e: unknown) {
     ElMessage.error(t('errors.scanFailed', { msg: String(e) }))
   }
@@ -234,64 +247,32 @@ async function reveal(path: string) {
   }
 }
 
-// 监听 progress 事件,实时收集文件
-watch(
-  () => cleaningStore.results,
-  () => {
-    // 收集所有 item_found 到 files(由 store 处理,这里读取一个集中字段)
-  },
-)
-
-// 单独监听 store 中暂存的文件
-let watchStop: (() => void) | null = null
-;(async () => {
-  const { watch: vueWatch } = await import('vue')
-  watchStop = vueWatch(
-    () => [cleaningStore.scanning, cleaningStore.scanId],
-    async ([scanning, sid]) => {
-      if (!scanning && sid && cleaningStore.scanKind === 'large-files') {
-        // 扫描结束
-        scanningRef.value = false
-        finished.value = true
-        // 文件清单由 store 汇总:实际项目可从 invoke 直接返回 list
-      }
-    },
-  )
-})()
-
-const scanningRef = ref(false)
-watch(scanningRef, (v) => (scanning.value = v))
-
-// 简单做法:扫描进行中,通过 currentPath 变化显示路径
-// 文件列表通过额外 invoke 'get_large_files_result' 获取
-// 这里为了简化,我们让后端在 scan 完成后把结果缓存在 store 中,
-// Vue 通过 listen 事件 'large-file-found' 收集
-import { listen, type UnlistenFn } from '@tauri-apps/api/event'
-let unFile: UnlistenFn | null = null
-
-;(async () => {
-  unFile = await listen<LargeFile>('large-file-found', (e) => {
-    if (cleaningStore.scanKind !== 'large-files') return
-    if (files.value.length < 5000) {
-      files.value.push(e.payload)
-    }
+// 监听 scanning 状态,用于在 UI 显示进度与结束
+const stopWatch = (() => {
+  return import('vue').then(({ watch }) => {
+    return watch(
+      () => cleaningStore.scanning,
+      (v) => {
+        scanning.value = v
+        if (!v && cleaningStore.scanKind === 'large-files') {
+          finished.value = true
+        }
+      },
+    )
   })
-  cleaningStore.scanning && (scanning.value = true)
 })()
 
-watch(
-  () => cleaningStore.scanning,
-  (v) => {
-    scanning.value = v
-    if (!v && cleaningStore.scanKind === 'large-files') {
-      finished.value = true
-    }
-  },
-)
+onMounted(async () => {
+  await cleaningStore.attach()
+})
 
 onUnmounted(async () => {
-  watchStop?.()
-  if (unFile) unFile()
+  const stop = await stopWatch
+  stop()
+  if (unFile) {
+    unFile()
+    unFile = null
+  }
   await cleaningStore.detach()
 })
 </script>

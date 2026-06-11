@@ -2,6 +2,7 @@
 
 use std::path::{Path, PathBuf};
 
+use crate::core::process_util;
 use crate::error::AppError;
 
 /// 展开环境变量 %FOO% 为实际路径
@@ -11,17 +12,14 @@ pub fn expand_env(path: &str) -> Result<PathBuf, AppError> {
         use std::ffi::OsString;
         use std::os::windows::ffi::OsStringExt;
         // 用 cmd.exe /c "echo %FOO%" 来展开环境变量(简单可靠)
-        let output = std::process::Command::new("cmd")
-            .args(["/C", &format!("echo {}", path)])
-            .output()
+        // CREATE_NO_WINDOW 避免黑色命令行窗口
+        let output = process_util::run_capture("cmd", &["/C", &format!("echo {}", path)])
             .map_err(|e| AppError::Path(format!("expand_env: {}", e)))?;
         if !output.status.success() {
             return Err(AppError::Path(format!("expand_env failed: {}", path)));
         }
         let s = String::from_utf8_lossy(&output.stdout);
         let trimmed = s.trim().trim_matches('"').trim();
-        // 转换宽字符(Windows 的 cmd 输出可能是 GBK,但 %TEMP% 等都是 ASCII,所以这里 OK)
-        // 实际系统变量含中文的很少,且后续操作都通过 OsString,直接用 String 即可
         let os = OsString::from(trimmed);
         Ok(PathBuf::from(os))
     }
@@ -35,13 +33,9 @@ pub fn expand_env(path: &str) -> Result<PathBuf, AppError> {
 pub fn system_drive() -> PathBuf {
     #[cfg(windows)]
     {
-        if let Some(p) = known_folder_path(36) {
-            // FOLDERID_System
-            if let Some(parent) = p.parent() {
-                if let Some(drive) = parent.parent() {
-                    return drive.to_path_buf();
-                }
-            }
+        // %SystemDrive% 是标准环境变量,直接展开
+        if let Ok(p) = expand_env("%SystemDrive%") {
+            return p;
         }
         PathBuf::from("C:\\")
     }
@@ -70,10 +64,7 @@ pub fn known_folder_path(folder_id: i32) -> Option<PathBuf> {
          if ($folder) {{ $folder.Self.Path }}",
         folder_id
     );
-    let output = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-Command", &script])
-        .output()
-        .ok()?;
+    let output = process_util::run_capture("powershell", &["-NoProfile", "-Command", &script]).ok()?;
     if !output.status.success() {
         return None;
     }
