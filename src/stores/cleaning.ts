@@ -25,7 +25,7 @@ export interface JunkFile {
 export interface JunkCategoryResult {
   id: string
   name: string
-  description?: string
+  description?: string | null
   total_bytes: number
   file_count: number
   files: JunkFile[]
@@ -128,6 +128,11 @@ export const useCleaningStore = defineStore('cleaning', () => {
     }
   }
 
+  /** 一次性写入完整结果(用于 system-junk-result、browser-cache-result 等) */
+  function setResults(items: JunkCategoryResult[]) {
+    results.value = items
+  }
+
   function reset() {
     results.value = []
     progress.value = 0
@@ -169,6 +174,7 @@ export const useCleaningStore = defineStore('cleaning', () => {
     attach,
     detach,
     reset,
+    setResults,
     beginScan,
     beginClean,
     endClean,

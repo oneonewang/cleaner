@@ -93,13 +93,20 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Search, Delete, CircleClose } from '@element-plus/icons-vue'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import JunkCategoryItem from '@/components/JunkCategoryItem.vue'
 import ScanProgressBar from '@/components/ScanProgressBar.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useCleaningStore } from '@/stores/cleaning'
 import { useSettingsStore } from '@/stores/settings'
-import { listSystemJunkCategories, scanSystemJunk, cleanSystemJunk, type JunkCategoryResult, type CleanItem } from '@/api/systemJunk'
+import {
+  listSystemJunkCategories,
+  scanSystemJunk,
+  cleanSystemJunk,
+  type JunkCategoryResult,
+  type CleanItem,
+} from '@/api/systemJunk'
 import { cancelScan } from '@/api'
 import { formatSize } from '@/utils/format'
 
@@ -111,7 +118,11 @@ const categories = ref<JunkCategoryResult[]>([])
 const selectedIds = ref<string[]>([])
 const confirmOpen = ref(false)
 
-const hasResults = computed(() => categories.value.length > 0)
+let unResult: UnlistenFn | null = null
+
+const hasResults = computed(
+  () => categories.value.some((c) => c.file_count > 0 || c.total_bytes > 0),
+)
 const selectedCount = computed(() => {
   const sel = new Set(selectedIds.value)
   return categories.value
@@ -126,7 +137,9 @@ const selectedBytes = computed(() => {
 })
 
 function catName(id: string) {
-  return t(`systemJunk.categories.${id}`, id)
+  const localized = t(`systemJunk.categories.${id}`, '')
+  if (localized) return localized as string
+  return id
 }
 
 function toggleOne(id: string, v: boolean) {
@@ -141,11 +154,19 @@ function selectAll(v: boolean) {
   selectedIds.value = v ? categories.value.map((c) => c.id) : []
 }
 
+function applyI18nNames() {
+  for (const c of categories.value) {
+    const localized = t(`systemJunk.categories.${c.id}`, '') as string
+    if (localized) c.name = localized
+  }
+}
+
 async function onScan() {
   cleaningStore.reset()
   categories.value = []
   selectedIds.value = []
   await cleaningStore.attach()
+  await setupListener()
   try {
     const { scan_id } = await scanSystemJunk(null)
     cleaningStore.beginScan('system-junk', scan_id)
@@ -175,7 +196,7 @@ function onClean() {
 async function doClean() {
   const sel = new Set(selectedIds.value)
   const items: CleanItem[] = categories.value
-    .filter((c) => sel.has(c.id))
+    .filter((c) => sel.has(c.id) && c.file_count > 0)
     .map((c) => ({ category: c.id, paths: c.files.map((f) => f.path) }))
 
   if (items.length === 0) return
@@ -186,7 +207,6 @@ async function doClean() {
     ElMessage.success(
       t('common.totalFreed', { n: formatSize(summary.total_bytes) }),
     )
-    // 移除已清理的类别
     const cleanedIds = new Set(items.map((i) => i.category))
     categories.value = categories.value.filter((c) => !cleanedIds.has(c.id))
     selectedIds.value = selectedIds.value.filter((id) => !cleanedIds.has(id))
@@ -197,85 +217,56 @@ async function doClean() {
   }
 }
 
-// 监听 progress 事件,把分类结果同步到 categories
-function syncFromStore() {
-  // cleaningStore.results 实时更新
-  for (const r of cleaningStore.results) {
-    const existing = categories.value.find((c) => c.id === r.id)
-    if (existing) {
-      existing.total_bytes = r.total_bytes
-      existing.file_count = r.file_count
-      existing.files = r.files
-    } else {
-      categories.value.push({ ...r })
+async function setupListener() {
+  if (unResult) return
+  unResult = await listen<JunkCategoryResult[]>('system-junk-result', (e) => {
+    if (cleaningStore.scanKind !== 'system-junk') return
+    // 用后端发回的完整结果替换本地
+    const list = e.payload
+    // 保留 i18n name(后端发的 name 是英文)
+    for (const c of list) {
+      const localized = t(`systemJunk.categories.${c.id}`, '') as string
+      if (localized) c.name = localized
     }
-  }
+    cleaningStore.setResults(list)
+    categories.value = list
+    // 默认全选
+    selectedIds.value = list
+      .filter((c) => c.file_count > 0)
+      .map((c) => c.id)
+  })
 }
 
-let stopWatch: (() => void) | null = null
-let stopProgress: (() => void) | null = null
 onMounted(async () => {
-  await cleaningStore.attach()
-  // 监听 results 变化
-  const stop = (await import('vue')).watch(
-    () => cleaningStore.results,
-    () => syncFromStore(),
-    { deep: true },
-  )
-  stopWatch = stop
-
-  // 监听 scanning 状态变化,完成后拉一次最终结果
-  stopProgress = (await import('vue')).watch(
-    () => cleaningStore.scanning,
-    async (scanning) => {
-      if (!scanning && cleaningStore.scanKind === 'system-junk') {
-        // 调用 list 拉取最终分类元数据
-        try {
-          const list = await listSystemJunkCategories()
-          // 合并已扫描的数据
-          for (const c of list) {
-            const existing = categories.value.find((x) => x.id === c.id)
-            if (existing) {
-              existing.name = c.name
-              existing.description = c.description
-            } else {
-              categories.value.push(c)
-            }
-          }
-          // 应用 i18n
-          applyI18nNames()
-        } catch (e) {
-          console.warn(e)
-        }
-      }
-    },
-  )
-
   // 预拉类别元数据
   try {
-    categories.value = await listSystemJunkCategories()
-    applyI18nNames()
+    const list = await listSystemJunkCategories()
+    applyI18nNamesOnto(list)
+    categories.value = list
   } catch (e) {
     console.warn(e)
   }
+  // 语言切换时刷新名称
+  const { watch } = await import('vue')
+  watch(locale, () => {
+    applyI18nNames()
+  })
 })
 
-function applyI18nNames() {
-  for (const c of categories.value) {
-    const localized = t(`systemJunk.categories.${c.id}`, '')
+function applyI18nNamesOnto(list: JunkCategoryResult[]) {
+  for (const c of list) {
+    const localized = t(`systemJunk.categories.${c.id}`, '') as string
     if (localized) c.name = localized
   }
 }
 
 onUnmounted(async () => {
-  stopWatch?.()
-  stopProgress?.()
+  if (unResult) {
+    unResult()
+    unResult = null
+  }
   await cleaningStore.detach()
 })
-
-// 语言切换时刷新名称
-import { watch as vueWatch } from 'vue'
-vueWatch(locale, () => applyI18nNames())
 </script>
 
 <style lang="scss" scoped>
