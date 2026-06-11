@@ -1,0 +1,12 @@
+// 主题色变量,供组件覆盖 Element Plus 主题
+:root {
+  --ooc-primary: #2b7fff;
+  --ooc-primary-soft: #e6f0ff;
+  --ooc-success: #00b42a;
+  --ooc-warning: #ff7d00;
+  --ooc-danger: #f53f3f;
+}
+
+html.dark {
+  --ooc-primary-soft: #1a2a44;
+}

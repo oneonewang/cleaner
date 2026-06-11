@@ -1,0 +1,14 @@
+<template>
+  <el-empty :description="description" :image-size="imageSize">
+    <template v-if="$slots.default" #default>
+      <slot />
+    </template>
+  </el-empty>
+</template>
+
+<script setup lang="ts">
+defineProps<{
+  description?: string
+  imageSize?: number
+}>()
+</script>

@@ -1,0 +1,51 @@
+{
+  "name": "oneonecleaner",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Windows 系统清理器 - Tauri + Vue 3 + Element Plus",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "3.5.13",
+    "vue-router": "4.5.0",
+    "pinia": "2.3.0",
+    "element-plus": "2.9.1",
+    "@element-plus/icons-vue": "2.3.1",
+    "vue-i18n": "10.0.5",
+    "nprogress": "0.2.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.1.0",
+    "@tauri-apps/api": "2.1.1",
+    "@tauri-apps/plugin-dialog": "2.0.1",
+    "@tauri-apps/plugin-shell": "2.0.1",
+    "@tauri-apps/plugin-opener": "2.0.0",
+    "typescript": "5.6.3",
+    "vite": "5.4.11",
+    "@vitejs/plugin-vue": "5.2.1",
+    "vue-tsc": "2.1.10",
+    "sass": "1.81.0",
+    "unplugin-auto-import": "0.18.6",
+    "unplugin-vue-components": "0.27.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "@vue/shared": "3.5.13",
+      "@vue/compiler-dom": "3.5.13",
+      "@vue/compiler-core": "3.5.13",
+      "@vue/compiler-sfc": "3.5.13",
+      "@vue/compiler-ssr": "3.5.13",
+      "@vue/reactivity": "3.5.13",
+      "@vue/runtime-core": "3.5.13",
+      "@vue/runtime-dom": "3.5.13"
+    }
+  }
+}

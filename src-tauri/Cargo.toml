@@ -1,0 +1,62 @@
+[package]
+name = "oneonecleaner"
+version = "0.1.0"
+description = "Windows 系统清理器"
+authors = ["oneonecleaner"]
+edition = "2021"
+rust-version = "1.78"
+
+[lib]
+name = "oneonecleaner_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "1"
+anyhow = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "fs", "macros", "io-util"] }
+parking_lot = "0.12"
+uuid = { version = "1", features = ["v4", "v5"] }
+once_cell = "1"
+chrono = { version = "0.4", features = ["serde"] }
+
+# 文件系统
+walkdir = "2"
+jwalk = "0.8"
+fs_extra = "1"
+dirs = "5"
+
+# Windows 专用
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_UI_Shell",
+    "Win32_System_Com",
+    "Win32_System_Registry",
+    "Win32_Storage_FileSystem"
+] }
+winreg = "0.52"
+windows-sys = { version = "0.59", features = [
+    "Win32_Foundation",
+    "Win32_UI_Shell",
+    "Win32_System_Com"
+] }
+
+# 并发
+rayon = "1"
+crossbeam-channel = "0.5"
+
+[dev-dependencies]
+tempfile = "3"
+
+[features]
+# 默认不开启自定义 protocol,需要时再加
+default = []
