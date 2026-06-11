@@ -16,11 +16,11 @@ export async function detectBrowsers(): Promise<BrowserProfile[]> {
   return invoke<BrowserProfile[]>('detect_browsers')
 }
 
-/** 扫描选定 profile 的缓存大小 */
+/** 启动扫描,返回 { scan_id };结果通过 `browser-cache-result` 事件回传,进度通过 `scan-progress` 事件推送 */
 export async function scanBrowserCache(
   profileIds: string[],
-): Promise<BrowserProfile[]> {
-  return invoke<BrowserProfile[]>('scan_browser_cache', { profileIds })
+): Promise<{ scan_id: string }> {
+  return invoke<{ scan_id: string }>('scan_browser_cache', { profileIds })
 }
 
 export interface CleanSummary {
