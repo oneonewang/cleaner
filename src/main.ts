@@ -23,17 +23,18 @@ app.use(createPinia())
 app.use(router)
 app.use(i18n)
 
-// Element Plus 主题随 i18n locale 切换
-const setupElementLocale = () => {
-  const locale = i18n.global.locale.value
-  // 通过自定义 provide 在 App 中读取,这里只设置全局 locale
-  document.documentElement.lang = locale
-}
 app.use(ElementPlus, { locale: i18n.global.locale.value === 'zh-CN' ? zhCn : enUs })
 
-setupElementLocale()
-// 监听语言变化更新 document lang 与 el-locale
-i18n.global.locale.value
+document.documentElement.lang = i18n.global.locale.value
 app.mount('#app')
+
+// 挂载后立即隐藏加载占位(避免阻塞主线程,等下一帧再移除)
+requestAnimationFrame(() => {
+  const loading = document.getElementById('app-loading')
+  if (loading) {
+    loading.classList.add('is-hiding')
+    setTimeout(() => loading.remove(), 380)
+  }
+})
 
 export default app
