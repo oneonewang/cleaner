@@ -19,6 +19,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             commands::get_app_info,
+            commands::show_main_window,
             commands::system_junk::list_system_junk_categories,
             commands::system_junk::scan_system_junk,
             commands::system_junk::clean_system_junk,
@@ -35,10 +36,8 @@ pub fn run() {
             commands::open_path,
         ])
         .setup(|app| {
-            // 确保主窗口可见
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-            }
+            // 主窗口在配置中 visible: false,等待前端 Vue 挂载完成后通过
+            // invoke('show_main_window') 主动通知显示,避免 WebView2 启动期间的白屏
             Ok(())
         })
         .run(tauri::generate_context!())

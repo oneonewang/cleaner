@@ -3,8 +3,10 @@
 pub mod browser_cache;
 pub mod large_files;
 pub mod registry;
-pub mod system_junk;
 pub mod shared;
+pub mod system_junk;
+
+use tauri::Manager;
 
 use crate::core::CANCEL_REGISTRY;
 use crate::error::AppError;
@@ -33,6 +35,17 @@ pub fn cancel_scan(scan_id: String) -> Result<(), AppError> {
 }
 
 #[tauri::command]
+pub fn show_main_window(app: tauri::AppHandle) -> Result<(), AppError> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.show().map_err(|e| AppError::Other(format!("show: {}", e)))?;
+        window
+            .set_focus()
+            .map_err(|e| AppError::Other(format!("set_focus: {}", e)))?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub fn reveal_in_explorer(path: String) -> Result<(), AppError> {
     #[cfg(windows)]
     {
@@ -53,3 +66,4 @@ pub fn open_path(path: String) -> Result<(), AppError> {
     }
     Ok(())
 }
+

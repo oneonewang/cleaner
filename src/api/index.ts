@@ -1,6 +1,11 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 
+/** 通知 Rust 显示主窗口(由 Vue 挂载后调用,避免 WebView2 启动白屏) */
+export async function showMainWindow(): Promise<void> {
+  return invoke('show_main_window')
+}
+
 /** 通用:取消扫描 */
 export async function cancelScan(scanId: string): Promise<void> {
   return invoke('cancel_scan', { scanId })
