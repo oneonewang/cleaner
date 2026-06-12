@@ -18,6 +18,7 @@ pub enum RegistryScope {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum Hive {
     HKLM,
     HKCU,

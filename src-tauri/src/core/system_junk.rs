@@ -194,7 +194,7 @@ fn scan_dir_full(root: &std::path::Path) -> (u64, u64) {
         .filter_map(|e| e.ok())
     {
         if entry.file_type().is_file() {
-            if let Some(meta) = entry.metadata().ok() {
+            if let Ok(meta) = entry.metadata() {
                 total = total.saturating_add(meta.len());
                 count = count.saturating_add(1);
             }

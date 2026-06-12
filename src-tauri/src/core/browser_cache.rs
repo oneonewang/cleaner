@@ -69,15 +69,10 @@ fn chromium_browser_profiles(
         if name == "System Profile" || name == "Guest Profile" {
             continue;
         }
-        // 默认 profile 名是 "Default",其他为 "Profile N"
-        let profile_label = if name == "Default" {
-            "Default".to_string()
-        } else if name.starts_with("Profile ") {
-            name.clone()
-        } else {
-            // 不认识的子目录(可能是 Crashpad 等),跳过
+        // 只接受 "Default" 和 "Profile N" 子目录,其他(Crashpad 等)跳过
+        if name != "Default" && !name.starts_with("Profile ") {
             continue;
-        };
+        }
         let mut cache_paths = Vec::new();
         for sub in cache_subdirs {
             let p = path.join(sub);

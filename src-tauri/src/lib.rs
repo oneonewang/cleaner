@@ -9,7 +9,6 @@ mod error;
 mod models;
 
 use crate::error::AppError;
-use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -37,7 +36,7 @@ pub fn run() {
             commands::reveal_in_explorer,
             commands::open_path,
         ])
-        .setup(|app| {
+        .setup(|_app| {
             // 主窗口在配置中 visible: false,等待前端 Vue 挂载完成后通过
             // invoke('show_main_window') 主动通知显示,避免 WebView2 启动期间的白屏
             Ok(())

@@ -107,17 +107,6 @@ fn extract_path(value: &str) -> Option<String> {
     None
 }
 
-// `Hive::to_winreg` 保留为可选便捷方法
-impl Hive {
-    #[cfg(windows)]
-    pub fn to_winreg(&self) -> winreg::HKEY {
-        match self {
-            Hive::HKLM => HKEY_LOCAL_MACHINE,
-            Hive::HKCU => HKEY_CURRENT_USER,
-        }
-    }
-}
-
 pub fn scan(scopes: &[RegistryScope]) -> Result<Vec<RegistryIssue>, AppError> {
     let mut out = Vec::new();
     for s in scopes {

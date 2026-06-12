@@ -9,8 +9,6 @@ use crate::error::AppError;
 pub fn expand_env(path: &str) -> Result<PathBuf, AppError> {
     #[cfg(windows)]
     {
-        use std::ffi::OsString;
-        use std::os::windows::ffi::OsStringExt;
         // 用 cmd.exe /c "echo %FOO%" 来展开环境变量(简单可靠)
         // CREATE_NO_WINDOW 避免黑色命令行窗口
         let output = process_util::run_capture("cmd", &["/C", &format!("echo {}", path)])
@@ -20,8 +18,7 @@ pub fn expand_env(path: &str) -> Result<PathBuf, AppError> {
         }
         let s = String::from_utf8_lossy(&output.stdout);
         let trimmed = s.trim().trim_matches('"').trim();
-        let os = OsString::from(trimmed);
-        Ok(PathBuf::from(os))
+        Ok(PathBuf::from(trimmed))
     }
     #[cfg(not(windows))]
     {
@@ -48,36 +45,4 @@ pub fn system_drive() -> PathBuf {
 /// 探测目录是否存在
 pub fn dir_exists(p: &Path) -> bool {
     p.is_dir()
-}
-
-/// 探测文件是否存在
-pub fn file_exists(p: &Path) -> bool {
-    p.is_file()
-}
-
-/// 通过 PowerShell SHGetKnownFolderPath 取得 known folder 路径
-#[cfg(windows)]
-pub fn known_folder_path(folder_id: i32) -> Option<PathBuf> {
-    let script = format!(
-        "$shell = New-Object -ComObject Shell.Application; \
-         $folder = $shell.NameSpace({}); \
-         if ($folder) {{ $folder.Self.Path }}",
-        folder_id
-    );
-    let output = process_util::run_capture("powershell", &["-NoProfile", "-Command", &script]).ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let s = String::from_utf8_lossy(&output.stdout);
-    let trimmed = s.trim();
-    if trimmed.is_empty() {
-        None
-    } else {
-        Some(PathBuf::from(trimmed))
-    }
-}
-
-#[cfg(not(windows))]
-pub fn known_folder_path(_folder_id: i32) -> Option<PathBuf> {
-    None
 }

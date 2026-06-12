@@ -18,7 +18,7 @@ pub fn dir_size(root: &Path) -> Result<u64, AppError> {
         .filter_map(|e| e.ok())
     {
         if entry.file_type().is_file() {
-            if let Some(meta) = entry.metadata().ok() {
+            if let Ok(meta) = entry.metadata() {
                 total = total.saturating_add(meta.len());
             }
         }
@@ -42,7 +42,7 @@ pub fn list_files(
             break;
         }
         let is_file = entry.file_type().is_file();
-        if let Some(meta) = entry.metadata().ok() {
+        if let Ok(meta) = entry.metadata() {
             let path_str = entry.path().to_string_lossy().to_string();
             out.push((path_str, meta.len(), !is_file));
         }

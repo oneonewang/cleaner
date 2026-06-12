@@ -34,14 +34,6 @@ impl CancelRegistry {
         }
     }
 
-    pub fn is_cancelled(&self, scan_id: &str) -> bool {
-        self.map
-            .lock()
-            .get(scan_id)
-            .map(|f| f.load(Ordering::Relaxed))
-            .unwrap_or(false)
-    }
-
     pub fn remove(&self, scan_id: &str) {
         self.map.lock().remove(scan_id);
     }

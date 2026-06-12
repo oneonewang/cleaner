@@ -38,20 +38,6 @@ pub enum ProgressEvent {
     },
 }
 
-impl ProgressEvent {
-    pub fn scan_id(&self) -> &str {
-        match self {
-            ProgressEvent::Started { scan_id, .. }
-            | ProgressEvent::Progress { scan_id, .. }
-            | ProgressEvent::CategoryDone { scan_id, .. }
-            | ProgressEvent::ItemFound { scan_id, .. }
-            | ProgressEvent::Finished { scan_id, .. }
-            | ProgressEvent::Cancelled { scan_id, .. }
-            | ProgressEvent::Error { scan_id, .. } => scan_id,
-        }
-    }
-}
-
 /// 大文件结果(用于流式事件)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LargeFile {

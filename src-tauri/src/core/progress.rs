@@ -49,18 +49,6 @@ pub fn emit_category_done(app: &AppHandle, scan_id: &str, category: &str, bytes:
     );
 }
 
-pub fn emit_item_found(app: &AppHandle, scan_id: &str, category: &str, path: &str, bytes: u64) {
-    emit_event(
-        app,
-        ProgressEvent::ItemFound {
-            scan_id: scan_id.to_string(),
-            category: category.to_string(),
-            path: path.to_string(),
-            bytes,
-        },
-    );
-}
-
 pub fn emit_finished(app: &AppHandle, scan_id: &str, total_bytes: u64) {
     emit_event(
         app,
