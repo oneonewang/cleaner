@@ -87,6 +87,7 @@ export default {
       recycle_bin: '回收站',
     },
     emptyBinWarn: '此操作将清空回收站中的所有内容,且不可恢复。',
+    noFileList: '回收站/系统位置共 {count} 个文件,清理时将整体处理,无法逐个预览。',
   },
   browser: {
     title: '浏览器缓存清理',

@@ -87,6 +87,7 @@ export default {
       recycle_bin: 'Recycle Bin',
     },
     emptyBinWarn: 'This will empty the Recycle Bin. This action is irreversible.',
+    noFileList: 'There are {count} files in total; they will be cleaned as a whole, no per-file preview available.',
   },
   browser: {
     title: 'Browser Cache Cleanup',

@@ -18,8 +18,9 @@
       </div>
     </div>
     <div v-if="description" class="junk-category-item__desc text-muted">{{ description }}</div>
+
     <el-collapse-transition>
-      <div v-show="expanded" class="junk-category-item__files">
+      <div v-show="expanded && files.length > 0" class="junk-category-item__files">
         <el-table :data="files" max-height="280" size="small" stripe>
           <el-table-column :label="t('common.openInExplorer')" min-width="200">
             <template #default="{ row }">
@@ -36,7 +37,13 @@
         </el-table>
       </div>
     </el-collapse-transition>
-    <div class="junk-category-item__foot">
+
+    <div v-if="files.length === 0 && file_count > 0" class="junk-category-item__note text-muted">
+      <el-icon><InfoFilled /></el-icon>
+      <span>{{ t('systemJunk.noFileList', { count: file_count }) }}</span>
+    </div>
+
+    <div v-if="files.length > 0" class="junk-category-item__foot">
       <el-button text size="small" @click="expanded = !expanded">
         {{ expanded ? t('common.collapseAll') : t('common.expandAll') }}
       </el-button>
@@ -47,6 +54,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { InfoFilled } from '@element-plus/icons-vue'
 import SizeText from './SizeText.vue'
 import { revealInExplorer } from '@/api'
 import type { JunkFile } from '@/api/systemJunk'
@@ -124,6 +132,19 @@ async function reveal(path: string) {
     color: var(--el-color-primary);
     &:hover {
       text-decoration: underline;
+    }
+  }
+  &__note {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--el-fill-color-light);
+    border-radius: 4px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    .el-icon {
+      color: var(--ooc-primary);
     }
   }
   &__foot {
