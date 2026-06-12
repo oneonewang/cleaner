@@ -3,8 +3,10 @@
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
+use jwalk::WalkDir;
+
 use crate::core::paths::{dir_exists, expand_env, system_drive};
-use crate::core::size::{dir_size, list_files};
+use crate::core::size::list_files;
 use crate::core::trash;
 use crate::error::AppError;
 use crate::models::junk_item::{CleanItem, CleanSummary, JunkCategory, JunkCategoryResult};
@@ -131,7 +133,6 @@ where
             }
             Err(e) => {
                 crate::core::progress::emit_error(app, scan_id, &format!("{}: {}", cat.id, e));
-                // 类别扫描失败时也加入占位结果,保证前端可见
                 results.push(JunkCategoryResult {
                     id: cat.id,
                     name: cat.name,
@@ -149,6 +150,9 @@ where
     Ok(results)
 }
 
+/// 扫描一个类别:
+/// - total_bytes / file_count:全量统计
+/// - files:前 200 个样本用于展示
 async fn scan_category(cat: &JunkCategory) -> Result<JunkCategoryResult, AppError> {
     let mut result = JunkCategoryResult {
         id: cat.id.clone(),
@@ -163,15 +167,12 @@ async fn scan_category(cat: &JunkCategory) -> Result<JunkCategoryResult, AppErro
         if !dir_exists(&path) {
             continue;
         }
-        let size = dir_size(&path).unwrap_or(0);
-        // 列出文件(最多 200 个示例)
-        let files = list_files(&path, 200).unwrap_or_default();
-        let file_count: u64 = files
-            .iter()
-            .filter(|(_, _, is_dir)| !*is_dir)
-            .count() as u64;
+        // 全量统计字节数与文件数
+        let (size, count) = scan_dir_full(&path);
         result.total_bytes = result.total_bytes.saturating_add(size);
-        result.file_count = result.file_count.saturating_add(file_count);
+        result.file_count = result.file_count.saturating_add(count);
+        // 取前 200 个文件作为展示样本
+        let files = list_files(&path, 200).unwrap_or_default();
         for (path, size, is_dir) in files {
             result.files.push(crate::models::junk_item::JunkFile {
                 path,
@@ -183,13 +184,31 @@ async fn scan_category(cat: &JunkCategory) -> Result<JunkCategoryResult, AppErro
     Ok(result)
 }
 
+/// 全量扫描:返回 (总字节数, 文件数)
+fn scan_dir_full(root: &std::path::Path) -> (u64, u64) {
+    let mut total: u64 = 0;
+    let mut count: u64 = 0;
+    for entry in WalkDir::new(root)
+        .follow_links(false)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        if entry.file_type().is_file() {
+            if let Some(meta) = entry.metadata().ok() {
+                total = total.saturating_add(meta.len());
+                count = count.saturating_add(1);
+            }
+        }
+    }
+    (total, count)
+}
+
 #[cfg(windows)]
 fn scan_recycle_bin() -> Result<JunkCategoryResult, AppError> {
     use crate::core::process_util;
-    // 通过 PowerShell 读取回收站大小
     let script = r#"
         $shell = New-Object -ComObject Shell.Application
-        $folder = $shell.NameSpace(0xa)  # ssfBITBUCKET = 10
+        $folder = $shell.NameSpace(0xa)
         $size = 0
         $count = 0
         if ($folder.Items().Count -gt 0) {
@@ -234,27 +253,75 @@ fn scan_recycle_bin() -> Result<JunkCategoryResult, AppError> {
     })
 }
 
-/// 清理
-pub fn clean(items: &[CleanItem], to_trash: bool) -> CleanSummary {
-    let mut summary = CleanSummary::default();
-    for it in items {
-        if it.category == "recycle_bin" {
-            #[cfg(windows)]
-            {
-                if let Err(e) = trash::empty_recycle_bin() {
-                    summary.errors.push(format!("recycle_bin: {}", e));
-                } else {
-                    // 估算
-                }
+/// 按类别清理(不再依赖前端传入的 paths,Rust 端按类别路径全量删除)
+pub fn clean_category(cat_id: &str, to_trash: bool) -> CleanSummary {
+    if cat_id == "recycle_bin" {
+        #[cfg(windows)]
+        {
+            if let Err(e) = trash::empty_recycle_bin() {
+                return CleanSummary {
+                    errors: vec![format!("recycle_bin: {}", e)],
+                    ..Default::default()
+                };
             }
+        }
+        return CleanSummary::default();
+    }
+
+    let cats = system_junk_categories();
+    let cat = match cats.iter().find(|c| c.id == cat_id) {
+        Some(c) => c,
+        None => {
+            return CleanSummary {
+                errors: vec![format!("unknown category: {}", cat_id)],
+                ..Default::default()
+            };
+        }
+    };
+
+    // 收集此类别下所有需要删除的文件
+    let mut all_paths: Vec<String> = Vec::new();
+    for p in &cat.paths {
+        let path = match expand_env(p) {
+            Ok(p) => p,
+            Err(_) => continue,
+        };
+        if !dir_exists(&path) {
             continue;
         }
-        let r = trash::remove_paths(&it.paths, to_trash);
-        summary.total_files = summary.total_files.saturating_add(r.total_files);
-        summary.total_bytes = summary.total_bytes.saturating_add(r.total_bytes);
-        summary.errors.extend(r.errors);
+        for entry in WalkDir::new(&path)
+            .follow_links(false)
+            .into_iter()
+            .filter_map(|e| e.ok())
+        {
+            if !entry.file_type().is_file() {
+                continue;
+            }
+            // 某些类别有特殊过滤:缩略图缓存只删 thumbcache_*.db
+            if cat_id == "thumbnail_cache" {
+                let name = entry.file_name().to_string_lossy();
+                let name = name.as_ref();
+                if !(name.starts_with("thumbcache_") && name.ends_with(".db")) {
+                    continue;
+                }
+            }
+            all_paths.push(entry.path().to_string_lossy().to_string());
+        }
     }
-    summary
+
+    trash::remove_paths(&all_paths, to_trash)
+}
+
+/// 保留旧接口(供其他模块调用),内部委托到 clean_category
+pub fn clean(items: &[CleanItem], to_trash: bool) -> CleanSummary {
+    let mut total = CleanSummary::default();
+    for it in items {
+        let sub = clean_category(&it.category, to_trash);
+        total.total_files = total.total_files.saturating_add(sub.total_files);
+        total.total_bytes = total.total_bytes.saturating_add(sub.total_bytes);
+        total.errors.extend(sub.errors);
+    }
+    total
 }
 
 #[cfg(test)]
