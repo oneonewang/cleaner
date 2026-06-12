@@ -141,6 +141,14 @@ export default {
     sendToTrashDesc: 'When off, files are permanently deleted',
     confirmBeforeClean: 'Show confirmation before cleaning',
   },
+  uac: {
+    title: 'Not running as administrator',
+    desc: 'Cleaning system folders, Prefetch, and HKLM registry entries requires admin rights.',
+    elevate: 'Restart as admin',
+    confirmTitle: 'Elevate to administrator',
+    confirmDesc: 'OneOne Cleaner will restart with admin privileges (a UAC prompt will appear). The current instance will exit.',
+    failed: 'Elevation failed: {msg}',
+  },
   errors: {
     scanFailed: 'Scan failed: {msg}',
     cleanFailed: 'Clean failed: {msg}',

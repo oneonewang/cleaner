@@ -141,6 +141,14 @@ export default {
     sendToTrashDesc: '关闭后清理操作将永久删除文件',
     confirmBeforeClean: '清理前显示确认对话框',
   },
+  uac: {
+    title: '当前未以管理员身份运行',
+    desc: '清理系统目录、Prefetch、注册表 HKLM 等项需要管理员权限。',
+    elevate: '以管理员身份重启',
+    confirmTitle: '提升为管理员',
+    confirmDesc: '将以管理员权限重启 OneOne Cleaner(系统会弹出 UAC 确认),当前实例会退出。',
+    failed: '提权失败: {msg}',
+  },
   errors: {
     scanFailed: '扫描失败: {msg}',
     cleanFailed: '清理失败: {msg}',

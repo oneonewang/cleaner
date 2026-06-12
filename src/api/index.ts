@@ -6,6 +6,16 @@ export async function showMainWindow(): Promise<void> {
   return invoke('show_main_window')
 }
 
+/** 当前进程是否以管理员身份运行 */
+export async function isAdmin(): Promise<boolean> {
+  return invoke<boolean>('is_admin')
+}
+
+/** 以管理员身份重启当前应用 */
+export async function relaunchAsAdmin(): Promise<void> {
+  return invoke('relaunch_as_admin')
+}
+
 /** 通用:取消扫描 */
 export async function cancelScan(scanId: string): Promise<void> {
   return invoke('cancel_scan', { scanId })

@@ -16,6 +16,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const lastCleanupAt = ref<number | null>(null)
   const totalFreedBytes = ref(0)
   const appInfo = ref<AppInfo | null>(null)
+  const isAdmin = ref(false)
 
   const themeClass = computed(() => (theme.value === 'dark' ? 'dark' : ''))
 
@@ -66,6 +67,15 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
+  async function loadIsAdmin() {
+    try {
+      const { isAdmin: invokeIsAdmin } = await import('@/api')
+      isAdmin.value = await invokeIsAdmin()
+    } catch (e) {
+      console.warn('is_admin failed', e)
+    }
+  }
+
   return {
     toTrash,
     confirmBeforeClean,
@@ -74,11 +84,13 @@ export const useSettingsStore = defineStore('settings', () => {
     lastCleanupAt,
     totalFreedBytes,
     appInfo,
+    isAdmin,
     themeClass,
     setTheme,
     setLocale,
     loadFromStorage,
     recordCleanup,
     loadAppInfo,
+    loadIsAdmin,
   }
 })

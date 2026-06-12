@@ -20,6 +20,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_app_info,
             commands::show_main_window,
+            commands::is_admin,
+            commands::relaunch_as_admin,
             commands::system_junk::list_system_junk_categories,
             commands::system_junk::scan_system_junk,
             commands::system_junk::clean_system_junk,

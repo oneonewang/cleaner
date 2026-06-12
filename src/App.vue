@@ -4,6 +4,7 @@
       <el-header class="app-header" height="56px">
         <AppHeader />
       </el-header>
+      <UacBanner v-if="!dismissed" />
       <el-container class="app-body">
         <el-aside class="app-aside" width="220px">
           <AppSidebar />
@@ -21,16 +22,27 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { ElConfigProvider } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import enUs from 'element-plus/es/locale/lang/en'
 import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import UacBanner from '@/components/UacBanner.vue'
 import { useI18n } from 'vue-i18n'
+import { useSettingsStore } from '@/stores/settings'
 
 const { locale } = useI18n()
 const elLocale = computed(() => (locale.value === 'zh-CN' ? zhCn : enUs))
+
+const settingsStore = useSettingsStore()
+// dismissed 由 UacBanner 内部管理,这里只用于 SSR 兼容
+const dismissed = ref(false)
+
+onMounted(() => {
+  settingsStore.loadFromStorage()
+  settingsStore.loadIsAdmin()
+})
 </script>
 
 <style lang="scss">
