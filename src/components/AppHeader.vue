@@ -42,15 +42,6 @@
         </el-form-item>
 
         <el-divider content-position="left">{{ t('settings.cleaning') }}</el-divider>
-        <el-form-item>
-          <template #label>
-            <span>{{ t('settings.sendToTrash') }}</span>
-            <div class="text-muted" style="font-size: 12px">
-              {{ t('settings.sendToTrashDesc') }}
-            </div>
-          </template>
-          <el-switch v-model="toTrash" />
-        </el-form-item>
         <el-form-item :label="t('settings.confirmBeforeClean')">
           <el-switch v-model="confirmBeforeClean" />
         </el-form-item>
@@ -68,7 +59,7 @@ import { useSettingsStore } from '@/stores/settings'
 
 const { t, locale: i18nLocale } = useI18n()
 const store = useSettingsStore()
-const { theme, locale, toTrash, confirmBeforeClean } = storeToRefs(store)
+const { theme, locale, confirmBeforeClean } = storeToRefs(store)
 const settingsOpen = ref(false)
 
 function toggleTheme() {

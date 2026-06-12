@@ -119,7 +119,6 @@
       v-model="confirmOpen"
       :count="selectedPaths.length"
       :bytes="selectedBytes"
-      :permanent="!settingsStore.toTrash"
       @confirm="doClean"
     />
   </div>
@@ -226,7 +225,7 @@ async function doClean() {
   if (selectedPaths.value.length === 0) return
   cleaning.value = true
   try {
-    const summary = await deletePaths(selectedPaths.value, settingsStore.toTrash)
+    const summary = await deletePaths(selectedPaths.value)
     settingsStore.recordCleanup(summary.total_bytes)
     ElMessage.success(t('common.totalFreed', { n: formatSize(summary.total_bytes) }))
     const sel = new Set(selectedPaths.value)

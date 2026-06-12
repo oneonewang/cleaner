@@ -185,6 +185,6 @@ pub fn scan_profile_size(profile: &mut BrowserProfile) -> Result<(), AppError> {
 }
 
 /// 清理浏览器缓存
-pub fn clean(cache_paths: &[String], to_trash: bool) -> CleanSummary {
-    crate::core::trash::remove_paths(cache_paths, to_trash)
+pub fn clean(cache_paths: &[String]) -> CleanSummary {
+    crate::core::trash::remove_paths(cache_paths)
 }

@@ -254,7 +254,7 @@ fn scan_recycle_bin() -> Result<JunkCategoryResult, AppError> {
 }
 
 /// 按类别清理(不再依赖前端传入的 paths,Rust 端按类别路径全量删除)
-pub fn clean_category(cat_id: &str, to_trash: bool) -> CleanSummary {
+pub fn clean_category(cat_id: &str) -> CleanSummary {
     if cat_id == "recycle_bin" {
         #[cfg(windows)]
         {
@@ -309,14 +309,14 @@ pub fn clean_category(cat_id: &str, to_trash: bool) -> CleanSummary {
         }
     }
 
-    trash::remove_paths(&all_paths, to_trash)
+    trash::remove_paths(&all_paths)
 }
 
 /// 保留旧接口(供其他模块调用),内部委托到 clean_category
-pub fn clean(items: &[CleanItem], to_trash: bool) -> CleanSummary {
+pub fn clean(items: &[CleanItem]) -> CleanSummary {
     let mut total = CleanSummary::default();
     for it in items {
-        let sub = clean_category(&it.category, to_trash);
+        let sub = clean_category(&it.category);
         total.total_files = total.total_files.saturating_add(sub.total_files);
         total.total_bytes = total.total_bytes.saturating_add(sub.total_bytes);
         total.errors.extend(sub.errors);

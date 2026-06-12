@@ -82,7 +82,6 @@
       v-model="confirmOpen"
       :count="selectedCount"
       :bytes="selectedBytes"
-      :permanent="!settingsStore.toTrash"
       @confirm="doClean"
     />
   </div>
@@ -202,7 +201,7 @@ async function doClean() {
   if (items.length === 0) return
   cleaningStore.beginClean()
   try {
-    const summary = await cleanSystemJunk(items, settingsStore.toTrash)
+    const summary = await cleanSystemJunk(items)
     settingsStore.recordCleanup(summary.total_bytes)
     ElMessage.success(
       t('common.totalFreed', { n: formatSize(summary.total_bytes) }),

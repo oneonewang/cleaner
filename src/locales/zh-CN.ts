@@ -29,7 +29,6 @@ export default {
     confirmDelete: '确认删除',
     confirmDeleteDesc: '将删除 {count} 项 / {size},此操作{action}。',
     action: {
-      toTrash: '可恢复(送入回收站)',
       permanent: '不可恢复(永久删除)',
     },
     yes: '是',
@@ -137,8 +136,6 @@ export default {
     dark: '深色',
     language: '语言',
     cleaning: '清理',
-    sendToTrash: '默认送入回收站',
-    sendToTrashDesc: '关闭后清理操作将永久删除文件',
     confirmBeforeClean: '清理前显示确认对话框',
   },
   uac: {

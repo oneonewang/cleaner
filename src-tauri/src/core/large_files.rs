@@ -145,8 +145,8 @@ fn now_ms() -> u64 {
 }
 
 /// 清理
-pub fn clean(paths: &[String], to_trash: bool) -> CleanSummary {
-    crate::core::trash::remove_paths(paths, to_trash)
+pub fn clean(paths: &[String]) -> CleanSummary {
+    crate::core::trash::remove_paths(paths)
 }
 
 #[allow(dead_code)]

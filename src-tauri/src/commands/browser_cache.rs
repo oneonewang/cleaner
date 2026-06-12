@@ -97,10 +97,9 @@ pub fn scan_browser_cache(
 #[tauri::command]
 pub async fn clean_browser_cache(
     cache_paths: Vec<String>,
-    to_trash: bool,
 ) -> Result<CleanSummary, AppError> {
     tauri::async_runtime::spawn_blocking(move || {
-        browser_cache::clean(&cache_paths, to_trash)
+        browser_cache::clean(&cache_paths)
     })
     .await
     .map_err(|e| AppError::Other(format!("join error: {}", e)))

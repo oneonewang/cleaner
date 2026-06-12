@@ -9,7 +9,6 @@ export interface AppInfo {
 }
 
 export const useSettingsStore = defineStore('settings', () => {
-  const toTrash = ref(true)
   const confirmBeforeClean = ref(true)
   const theme = ref<'light' | 'dark'>('light')
   const locale = ref<'zh-CN' | 'en-US'>('zh-CN')
@@ -45,8 +44,6 @@ export const useSettingsStore = defineStore('settings', () => {
     if (last) lastCleanupAt.value = Number(last)
     const total = localStorage.getItem('totalFreedBytes')
     if (total) totalFreedBytes.value = Number(total)
-    const trash = localStorage.getItem('toTrash')
-    if (trash !== null) toTrash.value = trash === 'true'
     const conf = localStorage.getItem('confirmBeforeClean')
     if (conf !== null) confirmBeforeClean.value = conf === 'true'
     applyTheme()
@@ -77,7 +74,6 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   return {
-    toTrash,
     confirmBeforeClean,
     theme,
     locale,

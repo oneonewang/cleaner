@@ -26,7 +26,6 @@ export async function scanLargeFiles(
 /** 批量删除文件 */
 export async function deletePaths(
   paths: string[],
-  toTrash: boolean,
 ): Promise<CleanSummary> {
-  return invoke<CleanSummary>('delete_paths', { paths, toTrash })
+  return invoke<CleanSummary>('delete_paths', { paths })
 }

@@ -101,10 +101,9 @@ pub fn scan_system_junk(
 #[tauri::command]
 pub async fn clean_system_junk(
     items: Vec<CleanItem>,
-    to_trash: bool,
 ) -> Result<CleanSummary, AppError> {
     let summary = tauri::async_runtime::spawn_blocking(move || {
-        system_junk::clean(&items, to_trash)
+        system_junk::clean(&items)
     })
     .await
     .map_err(|e| AppError::Other(format!("join error: {}", e)))?;

@@ -78,7 +78,6 @@
       v-model="confirmOpen"
       :count="selectedCount"
       :bytes="selectedBytes"
-      :permanent="!settingsStore.toTrash"
       @confirm="doClean"
     />
   </div>
@@ -195,7 +194,7 @@ async function doClean() {
   if (paths.length === 0) return
   cleaning.value = true
   try {
-    const summary = await cleanBrowserCache(paths, settingsStore.toTrash)
+    const summary = await cleanBrowserCache(paths)
     settingsStore.recordCleanup(summary.total_bytes)
     ElMessage.success(t('common.totalFreed', { n: formatSize(summary.total_bytes) }))
     profiles.value = profiles.value.filter((p) => !sel.has(p.id))

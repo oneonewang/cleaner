@@ -29,7 +29,6 @@ export default {
     confirmDelete: 'Confirm Delete',
     confirmDeleteDesc: 'About to delete {count} items / {size}. This action is {action}.',
     action: {
-      toTrash: 'recoverable (Recycle Bin)',
       permanent: 'irreversible (permanent delete)',
     },
     yes: 'Yes',
@@ -137,8 +136,6 @@ export default {
     dark: 'Dark',
     language: 'Language',
     cleaning: 'Cleaning',
-    sendToTrash: 'Send to Recycle Bin by default',
-    sendToTrashDesc: 'When off, files are permanently deleted',
     confirmBeforeClean: 'Show confirmation before cleaning',
   },
   uac: {

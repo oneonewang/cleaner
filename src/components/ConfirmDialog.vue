@@ -19,7 +19,6 @@
         </div>
       </div>
       <el-alert
-        v-if="permanent"
         :title="t('errors.permissionDenied')"
         type="warning"
         :closable="false"
@@ -28,7 +27,7 @@
     </div>
     <template #footer>
       <el-button @click="onCancel">{{ t('common.cancel') }}</el-button>
-      <el-button :type="permanent ? 'danger' : 'primary'" @click="onConfirm">
+      <el-button type="danger" @click="onConfirm">
         {{ t('common.confirm') }}
       </el-button>
     </template>
@@ -44,7 +43,6 @@ const props = defineProps<{
   modelValue: boolean
   count: number
   bytes: number
-  permanent: boolean
   title?: string
   description?: string
 }>()
@@ -71,7 +69,7 @@ const desc = computed(
     t('common.confirmDeleteDesc', {
       count: props.count,
       size: displaySize.value,
-      action: props.permanent ? t('common.action.permanent') : t('common.action.toTrash'),
+      action: t('common.action.permanent'),
     }),
 )
 

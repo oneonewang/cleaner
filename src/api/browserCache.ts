@@ -32,7 +32,6 @@ export interface CleanSummary {
 /** 清理浏览器缓存 */
 export async function cleanBrowserCache(
   cachePaths: string[],
-  toTrash: boolean,
 ): Promise<CleanSummary> {
-  return invoke<CleanSummary>('clean_browser_cache', { cachePaths, toTrash })
+  return invoke<CleanSummary>('clean_browser_cache', { cachePaths })
 }

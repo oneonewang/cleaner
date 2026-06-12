@@ -59,9 +59,9 @@ pub fn scan_large_files(
 }
 
 #[tauri::command]
-pub async fn delete_paths(paths: Vec<String>, to_trash: bool) -> Result<CleanSummary, AppError> {
+pub async fn delete_paths(paths: Vec<String>) -> Result<CleanSummary, AppError> {
     tauri::async_runtime::spawn_blocking(move || {
-        large_files::clean(&paths, to_trash)
+        large_files::clean(&paths)
     })
     .await
     .map_err(|e| AppError::Other(format!("join error: {}", e)))

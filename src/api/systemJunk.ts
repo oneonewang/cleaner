@@ -41,7 +41,6 @@ export async function scanSystemJunk(
 /** 按勾选项清理系统垃圾 */
 export async function cleanSystemJunk(
   items: CleanItem[],
-  toTrash: boolean,
 ): Promise<CleanSummary> {
-  return invoke<CleanSummary>('clean_system_junk', { items, toTrash })
+  return invoke<CleanSummary>('clean_system_junk', { items })
 }
